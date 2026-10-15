@@ -95,20 +95,25 @@ def show_report(title, policy, selected, issues):
 
 def check_policy(tickets):
     follow_up_tickets = []
+    prev_selected = []
     for ticket in tickets:
         if ticket['age_days'] >= _MIN_AGE_DAYS_FOR_FOLLOW_UP:
-            follow_up_tickets.append(ticket)
+            prev_selected.append(ticket)
     
-    return follow_up_tickets
+    for ticket in prev_selected:
+        if ticket['priority'] == 'high' or ticket['category'] == 'access':
+            follow_up_tickets.append(ticket)
+    return follow_up_tickets, prev_selected
 
 # Main function to execute the ticket selection and reporting process.
 def main():
     # Select open tickets and gather any validation issues.
     selected, issues = select_open_tickets(TICKETS)
     #print(selected)
-    selected = check_policy(selected)
+    selected, prev_selected = check_policy(selected)
     # Generate and display the report for the selected tickets and any issues.
-    show_report("Open Tickets", "Open-ticket policy", selected, issues)
+    show_report("Open Tickets", "Previous selection policy", prev_selected, issues)
+    show_report("Open Tickets", "Follow-up policy", selected, issues)
     # Entry point for the script.
 if __name__ == "__main__":
     # Call the main function to execute the script.
