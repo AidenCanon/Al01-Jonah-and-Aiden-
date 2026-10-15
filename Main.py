@@ -1,3 +1,4 @@
+_MIN_AGE_DAYS_FOR_FOLLOW_UP = 2
 from ticket_data import TICKETS
 
 # Validate ticket records and generate reports for open tickets.
@@ -94,12 +95,20 @@ def show_report(title, policy, selected, issues):
 # def needs_follow_up(ticket):
     
 # def select_follow_up_tickets(records):
-
+def check_policy(tickets):
+    follow_up_tickets = []
+    for ticket in tickets:
+        if ticket['age_days'] >= _MIN_AGE_DAYS_FOR_FOLLOW_UP:
+            follow_up_tickets.append(ticket)
+    
+    return follow_up_tickets
 
 # Main function to execute the ticket selection and reporting process.
 def main():
     # Select open tickets and gather any validation issues.
     selected, issues = select_open_tickets(TICKETS)
+    #print(selected)
+    selected = check_policy(selected)
     # Generate and display the report for the selected tickets and any issues.
     show_report("Open Tickets", "Open-ticket policy", selected, issues)
     # Entry point for the script.
