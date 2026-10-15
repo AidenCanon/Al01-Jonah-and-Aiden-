@@ -92,9 +92,7 @@ def show_report(title, policy, selected, issues):
             print(f"- {issue}")
     else:
         print("\nNo ticket data issues found.")
-# def needs_follow_up(ticket):
-    
-# def select_follow_up_tickets(records):
+
 def check_policy(tickets):
     follow_up_tickets = []
     for ticket in tickets:
