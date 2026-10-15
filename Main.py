@@ -1,67 +1,108 @@
-
-_STATUS_OPEN = "open"
-_AGE_DAYS_MIN = 2
-
 from ticket_data import TICKETS
 
-
-
+# Validate ticket records and generate reports for open tickets.
 def check_validation(ticket):
-    list_of_tickets = []
-    try:
-        id = ticket["id"]
-        status = ticket["status"]
-        category = ticket["category"]
+    # Check if the ticket is a dictionary and has the required fields.  
+    if not isinstance(ticket, dict):
+        return ["Invalid ticket record: expected a dictionary."]
+
+    ticket_id = ticket.get("id")
+    usable_id = isinstance(ticket_id, str) and bool(ticket_id.strip())
+    label = ticket_id.strip() if usable_id else "unknown ticket"
+    issues = []
+    # Validate the ticket ID.
+    if not usable_id:
+        issues.append(f"{label}: id must be a non-empty string.")
+    # Validate the status, category, and priority fields.
+    accepted_values = {
+        "status": {"open", "closed"},
+        "category": {"software", "access", "network"},
+        "priority": {"high", "normal", "low"},
+    }
+    for field, accepted in accepted_values.items():
+        if field not in ticket:
+            issues.append(f"{label}: missing required field '{field}'.")
+        elif not isinstance(ticket[field], str) or ticket[field] not in accepted:
+            options = ", ".join(sorted(accepted))
+            issues.append(
+                f"{label}: '{field}' must be one of: {options}."
+            )
+
+    # Validate the age_days field.
+    if "age_days" not in ticket:
+        issues.append(f"{label}: missing required field 'age_days'.")
+    else:
         age_days = ticket["age_days"]
-        priority = ticket["priority"]
-        correct = 0
-        if id != "":
-            correct += 1
-        if status == "open" or status == "closed":
-            correct += 1
-        if category == "software" or category == "network" or category == "access":
-            correct += 1
-        if isinstance(age_days, int) and not isinstance(age_days, bool) and age_days >= 0:
-            correct += 1
-        if priority == "low" or priority == "normal" or priority == "high":
-            correct += 1
-        if correct == 5:
-                list_of_tickets.append({
-                    "id": id,
-                    "status": status,
-                    "category": category,
-                    "age_days": age_days,
-                    "priority": priority
-                })
-    except:
-        return []
-    if len(list_of_tickets) == 0:
-        print("No valid tickets found.")
-    return list_of_tickets
-def check_missing(field, ticket):
-    try:
-        field_value = ticket[field]
-        return field_value
+        if (
+            isinstance(age_days, bool)
+            or not isinstance(age_days, int)
+            or age_days < 0
+        ):
+            issues.append(
+                f"{label}: 'age_days' must be a non-negative integer."
+            )
 
+    return issues
 
-def check_tickets():
-    for each in check_validation(ticket):
-        if each["status"] == _STATUS_OPEN and each["age_days"] >= _AGE_DAYS_MIN:
-            print(each)
+# Select open tickets from the list of records.
+def select_open_tickets(records):
+    # Initialize lists for selected tickets and issues.
+    selected = []
+    # List to store issues found during validation.
+    issues = []
 
+    # Iterate through each ticket and validate it.
+    for ticket in records:
+        ticket_issues = check_validation(ticket)
+        # If there are issues with the ticket, add them to the issues list. Otherwise, if the ticket is open, add it to the selected list.
+        if ticket_issues:
+            issues.extend(ticket_issues)
+        # Skip adding this ticket to the selected list since it has validation issues.
+        elif ticket["status"] == "open":
+            selected.append(ticket)
 
-def main():
-    list_of_tickets = []
-    #print(check_validation())
-    check_tickets()
+    return selected, issues
 
+# Display a report of selected tickets and any issues found during validation.
+def show_report(title, policy, selected, issues):
+    print(f"\n{title}")
+    print(f"Policy: {policy}")
+    print("-" * 40)
+    # Display the list of selected tickets.
+    if selected:
+        for ticket in selected:
+            print(
+                f"{ticket['id']} | "
+                f"Status: {ticket['status']} | "
+                f"Category: {ticket['category']} | "
+                f"Age: {ticket['age_days']} days | "
+                f"Priority: {ticket['priority']}"
+            )
+    else:
+        print("No tickets match this view.")
 
-
-
-
-
-if __name__ == "__main__":
-    main()
-
-
+    # Display the count of selected tickets.
+    print(f"Selected tickets: {len(selected)}")
+    # Display any issues found during validation.
+    if issues:
+        print("\nTickets needing review:")
+        # List each issue that needs review.
+        for issue in issues:
+            print(f"- {issue}")
+    else:
+        print("\nNo ticket data issues found.")
+# def needs_follow_up(ticket):
     
+# def select_follow_up_tickets(records):
+
+
+# Main function to execute the ticket selection and reporting process.
+def main():
+    # Select open tickets and gather any validation issues.
+    selected, issues = select_open_tickets(TICKETS)
+    # Generate and display the report for the selected tickets and any issues.
+    show_report("Open Tickets", "Open-ticket policy", selected, issues)
+    # Entry point for the script.
+if __name__ == "__main__":
+    # Call the main function to execute the script.
+    main()
